@@ -8,5 +8,6 @@ public enum DocumentType {
     BON_LIVRAISON,
     DOCUMENT_BESOIN,
     PROCES_VERBAL,
+    IMAGE_MATERIEL,
     AUTRE
 }

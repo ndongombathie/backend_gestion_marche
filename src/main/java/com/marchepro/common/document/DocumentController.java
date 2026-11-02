@@ -3,6 +3,7 @@ package com.marchepro.common.document;
 import com.marchepro.appeloffre.entity.AppelOffre;
 import com.marchepro.appeloffre.entity.StatutAppelOffre;
 import com.marchepro.appeloffre.repository.AppelOffreRepository;
+import com.marchepro.common.exception.BusinessException;
 import com.marchepro.common.exception.ForbiddenException;
 import com.marchepro.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -66,6 +68,28 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
                         .filename(document.getNom(), StandardCharsets.UTF_8)
                         .build().toString())
+                .body(resource);
+    }
+
+    @GetMapping("/{id}/preview")
+    @Operation(summary = "Prévisualiser un document sans le télécharger")
+    public ResponseEntity<Resource> preview(@PathVariable Long id) {
+        Document document = documentService.charger(id);
+        verifierAcces(document);
+        if (!document.estApercuPossible()) {
+            throw new BusinessException(
+                    "Ce format ne peut pas être prévisualisé. Veuillez télécharger le document.");
+        }
+        Resource resource = documentService.ressource(document);
+        MediaType contentType = MediaTypeFactory.getMediaType(document.getNom())
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(document.getNom(), StandardCharsets.UTF_8)
+                        .build().toString())
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
     }
 

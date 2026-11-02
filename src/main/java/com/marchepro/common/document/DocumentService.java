@@ -30,6 +30,7 @@ public class DocumentService {
 
     private static final Set<String> EXTENSIONS_AUTORISEES = Set.of(
             "pdf", "doc", "docx", "xls", "xlsx", "png", "jpg", "jpeg", "zip");
+    private static final Set<String> EXTENSIONS_IMAGES = Set.of("png", "jpg", "jpeg");
     private static final long TAILLE_MAX = 10L * 1024 * 1024;
 
     private final DocumentRepository documentRepository;
@@ -111,6 +112,26 @@ public class DocumentService {
         auditService.enregistrer("UPLOAD_DOCUMENT", entiteType.toUpperCase(Locale.ROOT), entiteId,
                 "Fichier ajouté : " + nomOriginal + " (" + type + ")");
         return DocumentDto.from(document);
+    }
+
+    @Transactional
+    public DocumentDto stockerImage(MultipartFile fichier, String entiteType, Long entiteId) {
+        if (fichier == null || fichier.isEmpty()) {
+            throw new BusinessException("Le fichier est vide");
+        }
+        String nomOriginal = fichier.getOriginalFilename() == null ? "image" : fichier.getOriginalFilename();
+        String extension = extension(Paths.get(nomOriginal).getFileName().toString());
+        if (!EXTENSIONS_IMAGES.contains(extension)) {
+            throw new BusinessException("Format d'image non autorisé. Formats acceptés : JPG, JPEG, PNG");
+        }
+        String contentType = fichier.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new BusinessException("Le fichier téléversé doit être une image");
+        }
+        String typeEntite = entiteType.toUpperCase(Locale.ROOT);
+        documentRepository.findByEntiteTypeAndEntiteIdOrderByDateUploadDesc(typeEntite, entiteId)
+                .forEach(document -> supprimer(document.getId()));
+        return stocker(fichier, DocumentType.IMAGE_MATERIEL, typeEntite, entiteId, null);
     }
 
     @Transactional(readOnly = true)

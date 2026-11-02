@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.Locale;
 
 @Entity
 @Table(name = "documents", indexes = {
@@ -53,5 +54,20 @@ public class Document {
         if (dateUpload == null) {
             dateUpload = Instant.now();
         }
+    }
+
+    public boolean estApercuPossible() {
+        if (nom == null) {
+            return false;
+        }
+        int index = nom.lastIndexOf('.');
+        if (index < 0 || index == nom.length() - 1) {
+            return false;
+        }
+        String extension = nom.substring(index + 1).toLowerCase(Locale.ROOT);
+        return "pdf".equals(extension)
+                || "png".equals(extension)
+                || "jpg".equals(extension)
+                || "jpeg".equals(extension);
     }
 }

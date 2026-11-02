@@ -30,10 +30,14 @@ import com.marchepro.utilisateur.entity.Role;
 import com.marchepro.utilisateur.repository.UtilisateurRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.Year;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -129,6 +133,7 @@ public class OffreService {
         }
         List<DocumentDto> documents = documentService.lister("OFFRE", offre.getId());
         documentObligatoireService.verifierCompletion(appelOffre.getId(), documents);
+        verifierImagesMateriels(offre);
 
         offre.setReference(genererReference());
         offre.setReferenceAccuse("ACC-" + Year.now().getValue() + "-"
@@ -204,12 +209,33 @@ public class OffreService {
                 .orElseThrow(() -> new ResourceNotFoundException("Offre introuvable"));
     }
 
+    @Transactional
+    public OffreDto ajouterImageLigne(Long offreId, Long ligneId, MultipartFile fichier) {
+        Offre offre = chargerAutorise(offreId);
+        if (offre.getStatut() != StatutOffre.BROUILLON) {
+            throw new BusinessException("Les images des matériels ne peuvent être modifiées que sur un brouillon");
+        }
+        LigneOffre ligne = offre.getLignes().stream()
+                .filter(l -> l.getId().equals(ligneId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Ligne d'offre introuvable"));
+        documentService.stockerImage(fichier, "LIGNE_OFFRE", ligne.getId());
+        auditService.enregistrer("UPLOAD_IMAGE_MATERIEL", "LIGNE_OFFRE", ligne.getId(),
+                "Image ajoutée pour le matériel " + ligne.getDesignation());
+        return mapper(offre);
+    }
+
     public OffreDto mapper(Offre offre) {
         long evaluations = evaluationRepository.findByOffreId(offre.getId()).size();
         List<DocumentDto> documents = documentService.lister("OFFRE", offre.getId());
         List<DocumentObligatoireSuiviDto> documentsObligatoires =
                 documentObligatoireService.suivre(offre.getAppelOffre().getId(), documents);
-        return OffreDto.from(offre, evaluations, documents, documentsObligatoires);
+        Map<Long, DocumentDto> imagesParLigne = new HashMap<>();
+        for (LigneOffre ligne : offre.getLignes()) {
+            documentService.lister("LIGNE_OFFRE", ligne.getId()).stream().findFirst()
+                    .ifPresent(image -> imagesParLigne.put(ligne.getId(), image));
+        }
+        return OffreDto.from(offre, evaluations, documents, documentsObligatoires, imagesParLigne);
     }
 
     private Offre chargerAutorise(Long id) {
@@ -226,16 +252,51 @@ public class OffreService {
         offre.setDelaiLivraisonJours(request.delaiLivraisonJours());
         offre.setInformationsTechniques(request.informationsTechniques());
         offre.setObservationsFournisseur(request.observationsFournisseur());
-        offre.getLignes().clear();
+
+        List<LigneOffre> lignesExistantes = new ArrayList<>(offre.getLignes());
         if (request.lignes() != null) {
             for (LigneOffreRequest ligneRequest : request.lignes()) {
-                LigneOffre ligne = new LigneOffre();
+                LigneOffre ligne = retirerLigneCorrespondante(lignesExistantes, ligneRequest);
+                if (ligne == null) {
+                    ligne = new LigneOffre();
+                    offre.ajouterLigne(ligne);
+                }
                 ligne.setDesignation(ligneRequest.designation().trim());
                 ligne.setQuantite(ligneRequest.quantite());
                 ligne.setPrixUnitaire(ligneRequest.prixUnitaire());
                 ligne.setCaracteristiques(ligneRequest.caracteristiques());
-                offre.ajouterLigne(ligne);
             }
+        }
+        offre.getLignes().removeAll(lignesExistantes);
+    }
+
+    private LigneOffre retirerLigneCorrespondante(List<LigneOffre> lignes, LigneOffreRequest request) {
+        LigneOffre ligne = null;
+        if (request.id() != null) {
+            ligne = lignes.stream().filter(l -> l.getId().equals(request.id())).findFirst().orElse(null);
+        }
+        if (ligne == null) {
+            ligne = lignes.stream()
+                    .filter(l -> l.getDesignation().equalsIgnoreCase(request.designation().trim()))
+                    .findFirst().orElse(null);
+        }
+        if (ligne != null) {
+            lignes.remove(ligne);
+        }
+        return ligne;
+    }
+
+    private void verifierImagesMateriels(Offre offre) {
+        if (offre.getLignes().isEmpty()) {
+            throw new BusinessException("L'offre doit contenir au moins un matériel");
+        }
+        List<String> sansImage = offre.getLignes().stream()
+                .filter(ligne -> documentService.lister("LIGNE_OFFRE", ligne.getId()).isEmpty())
+                .map(LigneOffre::getDesignation)
+                .toList();
+        if (!sansImage.isEmpty()) {
+            throw new BusinessException("Une image est obligatoire pour chaque matériel. "
+                    + "Images manquantes : " + String.join(", ", sansImage));
         }
     }
 

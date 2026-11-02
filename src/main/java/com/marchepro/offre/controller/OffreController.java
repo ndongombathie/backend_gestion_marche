@@ -8,9 +8,11 @@ import com.marchepro.offre.service.OffreService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -59,6 +61,16 @@ public class OffreController {
     @Operation(summary = "Modifier un brouillon d'offre")
     public ApiResponse<OffreDto> modifier(@PathVariable Long id, @Valid @RequestBody OffreRequest request) {
         return ApiResponse.success("Brouillon mis à jour", offreService.modifierBrouillon(id, request));
+    }
+
+    @PostMapping(value = "/{id}/lignes/{ligneId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('FOURNISSEUR')")
+    @Operation(summary = "Téléverser l'image d'un matériel de l'offre")
+    public ApiResponse<OffreDto> uploaderImageLigne(@PathVariable Long id,
+                                                    @PathVariable Long ligneId,
+                                                    @RequestParam("fichier") MultipartFile fichier) {
+        return ApiResponse.success("Image du matériel téléversée",
+                offreService.ajouterImageLigne(id, ligneId, fichier));
     }
 
     @PostMapping("/{id}/soumettre")

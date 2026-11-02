@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public record OffreDto(
         Long id,
@@ -35,7 +36,8 @@ public record OffreDto(
         List<LigneOffreDto> lignes
 ) {
     public static OffreDto from(Offre o, long nombreEvaluations, List<DocumentDto> documents,
-                                List<DocumentObligatoireSuiviDto> documentsObligatoires) {
+                                List<DocumentObligatoireSuiviDto> documentsObligatoires,
+                                Map<Long, DocumentDto> imagesParLigne) {
         return new OffreDto(
                 o.getId(), o.getReference(), o.getReferenceAccuse(), o.getMontant(),
                 o.getDelaiLivraisonJours(), o.getInformationsTechniques(), o.getObservationsFournisseur(),
@@ -50,7 +52,9 @@ public record OffreDto(
                 nombreEvaluations,
                 documents,
                 documentsObligatoires,
-                o.getLignes().stream().map(LigneOffreDto::from).toList()
+                o.getLignes().stream()
+                        .map(ligne -> LigneOffreDto.from(ligne, imagesParLigne.get(ligne.getId())))
+                        .toList()
         );
     }
 }

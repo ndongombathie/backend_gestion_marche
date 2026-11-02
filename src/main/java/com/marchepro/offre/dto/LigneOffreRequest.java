@@ -8,6 +8,8 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record LigneOffreRequest(
+        Long id,
+
         @NotBlank(message = "La désignation est obligatoire")
         @Size(max = 160)
         String designation,

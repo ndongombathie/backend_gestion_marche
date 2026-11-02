@@ -11,7 +11,8 @@ public record DocumentDto(
         String entiteType,
         Long entiteId,
         Long documentObligatoireId,
-        Instant dateUpload
+        Instant dateUpload,
+        boolean apercuPossible
 ) {
     public static DocumentDto from(Document document) {
         return new DocumentDto(
@@ -23,7 +24,8 @@ public record DocumentDto(
                 document.getEntiteType(),
                 document.getEntiteId(),
                 document.getDocumentObligatoireId(),
-                document.getDateUpload()
+                document.getDateUpload(),
+                document.estApercuPossible()
         );
     }
 }

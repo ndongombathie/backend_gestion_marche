@@ -66,6 +66,7 @@
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/common/response/PageResponse.java
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/config/DataSeeder.java
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/config/DocumentObligatoireInitializer.java
+/home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/config/DocumentTypeConstraintInitializer.java
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/evaluation/controller/EvaluationController.java
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/evaluation/dto/ConsolidationDto.java
 /home/ndongo/Bureau/Master 1 EPT/Java/projet marche/backend/src/main/java/com/marchepro/evaluation/dto/EvaluationDto.java
