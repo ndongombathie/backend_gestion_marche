@@ -48,6 +48,7 @@ public class AppelOffreService {
     private final OffreRepository offreRepository;
     private final AttributionRepository attributionRepository;
     private final DocumentService documentService;
+    private final DocumentObligatoireService documentObligatoireService;
     private final NotificationService notificationService;
     private final UtilisateurRepository utilisateurRepository;
     private final AuditService auditService;
@@ -60,6 +61,7 @@ public class AppelOffreService {
                              OffreRepository offreRepository,
                              AttributionRepository attributionRepository,
                              DocumentService documentService,
+                             DocumentObligatoireService documentObligatoireService,
                              NotificationService notificationService,
                              UtilisateurRepository utilisateurRepository,
                              AuditService auditService,
@@ -71,6 +73,7 @@ public class AppelOffreService {
         this.offreRepository = offreRepository;
         this.attributionRepository = attributionRepository;
         this.documentService = documentService;
+        this.documentObligatoireService = documentObligatoireService;
         this.notificationService = notificationService;
         this.utilisateurRepository = utilisateurRepository;
         this.auditService = auditService;
@@ -273,7 +276,8 @@ public class AppelOffreService {
     public AppelOffreDto mapper(AppelOffre appelOffre, boolean vuePublique) {
         List<DocumentDto> documents = documentService.lister("APPEL_OFFRE", appelOffre.getId());
         long nombreOffres = vuePublique ? 0 : offreRepository.countByAppelOffreId(appelOffre.getId());
-        return AppelOffreDto.from(appelOffre, nombreOffres, documents);
+        return AppelOffreDto.from(appelOffre, nombreOffres, documents,
+                documentObligatoireService.lister(appelOffre.getId()));
     }
 
     private void appliquer(AppelOffre appelOffre, AppelOffreRequest request) {

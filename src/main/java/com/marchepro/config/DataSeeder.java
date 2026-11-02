@@ -1,8 +1,10 @@
 package com.marchepro.config;
 
 import com.marchepro.appeloffre.entity.AppelOffre;
+import com.marchepro.appeloffre.entity.DocumentObligatoire;
 import com.marchepro.appeloffre.entity.StatutAppelOffre;
 import com.marchepro.appeloffre.repository.AppelOffreRepository;
+import com.marchepro.appeloffre.repository.DocumentObligatoireRepository;
 import com.marchepro.attribution.entity.Attribution;
 import com.marchepro.attribution.entity.StatutAttribution;
 import com.marchepro.attribution.repository.AttributionRepository;
@@ -68,8 +70,10 @@ import java.time.Year;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Component
 @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true", matchIfMissing = true)
@@ -84,6 +88,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ExpressionBesoinRepository besoinRepository;
     private final MarcheRepository marcheRepository;
     private final AppelOffreRepository appelOffreRepository;
+    private final DocumentObligatoireRepository documentObligatoireRepository;
     private final OffreRepository offreRepository;
     private final EvaluationRepository evaluationRepository;
     private final AttributionRepository attributionRepository;
@@ -104,6 +109,7 @@ public class DataSeeder implements CommandLineRunner {
                       ExpressionBesoinRepository besoinRepository,
                       MarcheRepository marcheRepository,
                       AppelOffreRepository appelOffreRepository,
+                      DocumentObligatoireRepository documentObligatoireRepository,
                       OffreRepository offreRepository,
                       EvaluationRepository evaluationRepository,
                       AttributionRepository attributionRepository,
@@ -117,6 +123,7 @@ public class DataSeeder implements CommandLineRunner {
         this.besoinRepository = besoinRepository;
         this.marcheRepository = marcheRepository;
         this.appelOffreRepository = appelOffreRepository;
+        this.documentObligatoireRepository = documentObligatoireRepository;
         this.offreRepository = offreRepository;
         this.evaluationRepository = evaluationRepository;
         this.attributionRepository = attributionRepository;
@@ -432,6 +439,17 @@ public class DataSeeder implements CommandLineRunner {
         cahierDesCharges(ao6);
         cahierDesCharges(ao7);
 
+        documentsObligatoires(ao1);
+        documentsObligatoires(ao2);
+        documentsObligatoires(ao3);
+        documentsObligatoires(ao5);
+        documentsObligatoires(ao6);
+        documentsObligatoires(ao7);
+
+        Map<Integer, AppelOffre> aosPublies = appelsOffresPublies(admin, maintenant);
+
+        offresAEvaluer(aosPublies, tech, batimat, digital, globalOffice, maintenant);
+
         Offre o1Tech = offre(ao1, tech, new BigDecimal("42500000"), 45, StatutOffre.RETENUE,
                 jours(maintenant, 75), "Solution complète conforme au cahier des charges.");
         Offre o1Digital = offre(ao1, digital, new BigDecimal("44800000"), 60, StatutOffre.NON_RETENUE,
@@ -549,6 +567,259 @@ public class DataSeeder implements CommandLineRunner {
 
     private static Instant jours(Instant base, int nombre) {
         return base.minus(nombre, ChronoUnit.DAYS);
+    }
+
+    private record LigneSeed(String designation, int quantite, String caracteristiques, BigDecimal prixUnitaire) {
+    }
+
+    private record AppelOffrePublieSeed(int numero, String objet, String description, String categorie,
+                                        String organisme, BigDecimal budget, ModePassation mode,
+                                        int dateLimiteJours, int datePublicationJours,
+                                        List<LigneSeed> lignes) {
+    }
+
+    private Map<Integer, AppelOffre> appelsOffresPublies(Utilisateur admin, Instant maintenant) {
+        LocalDateTime base = LocalDateTime.now(DAKAR);
+        Map<Integer, AppelOffre> appelsOffres = new LinkedHashMap<>();
+        List<AppelOffrePublieSeed> seeds = List.of(
+                new AppelOffrePublieSeed(8, "Acquisition d'équipements de sécurité informatique",
+                        "Mise à niveau de la protection du système d'information de l'administration.",
+                        "Informatique", "Agence De l'Informatique de l'État", new BigDecimal("22000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 30, 12,
+                        List.of(new LigneSeed("Pare-feu matériel", 2,
+                                        "Appliance nouvelle génération, haute disponibilité", new BigDecimal("4500000")),
+                                new LigneSeed("Serveur de sauvegarde", 2,
+                                        "Stockage 16 To, sauvegarde chiffrée", new BigDecimal("5500000")),
+                                new LigneSeed("Licence antivirus", 200,
+                                        "Protection postes et serveurs, 12 mois", new BigDecimal("25000")))),
+                new AppelOffrePublieSeed(9, "Acquisition de groupes électrogènes",
+                        "Fourniture et installation de groupes électrogènes de secours pour les sites déconcentrés.",
+                        "Énergie", "Ministère de l'Énergie et du Pétrole", new BigDecimal("48000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 45, 8,
+                        List.of(new LigneSeed("Groupe électrogène 100 kVA", 3,
+                                        "Diesel, insonorisé, coffret automatique", new BigDecimal("12000000")),
+                                new LigneSeed("Groupe électrogène 60 kVA", 2,
+                                        "Diesel, insonorisé", new BigDecimal("6000000")))),
+                new AppelOffrePublieSeed(10, "Construction d'un bâtiment administratif de deux niveaux",
+                        "Travaux de construction d'un bâtiment administratif au sein du siège.",
+                        "Travaux", "Ministère des Infrastructures et des Transports", new BigDecimal("185000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 60, 15,
+                        List.of(new LigneSeed("Gros œuvre", 1,
+                                        "Fondations et structure en béton armé", new BigDecimal("110000000")),
+                                new LigneSeed("Second œuvre", 1,
+                                        "Menuiserie, électricité, plomberie", new BigDecimal("55000000")),
+                                new LigneSeed("Étanchéité et peinture", 1,
+                                        "Toiture et finitions", new BigDecimal("20000000")))),
+                new AppelOffrePublieSeed(11, "Réhabilitation des sanitaires des services centraux",
+                        "Travaux de réhabilitation et de mise aux normes des blocs sanitaires.",
+                        "Travaux", "Ministère de l'Éducation Nationale", new BigDecimal("27000000"),
+                        ModePassation.APPEL_OFFRES_RESTREINT, 35, 10,
+                        List.of(new LigneSeed("Rénovation des réseaux de plomberie", 1,
+                                        "Alimentation et évacuation", new BigDecimal("12000000")),
+                                new LigneSeed("Carrelage et faïence", 1,
+                                        "Revêtement des sanitaires", new BigDecimal("9000000")),
+                                new LigneSeed("Appareils sanitaires", 1,
+                                        "Lavabos, WC et robinetterie", new BigDecimal("6000000")))),
+                new AppelOffrePublieSeed(12, "Fourniture de médicaments et consommables médicaux",
+                        "Approvisionnement annuel en médicaments essentiels et consommables médicaux.",
+                        "Santé", "Ministère de la Santé et de l'Action Sociale", new BigDecimal("95000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 40, 6,
+                        List.of(new LigneSeed("Médicaments essentiels", 1,
+                                        "Liste nationale, lot annuel", new BigDecimal("65000000")),
+                                new LigneSeed("Consommables médicaux", 1,
+                                        "Gants, seringues et pansements", new BigDecimal("30000000")))),
+                new AppelOffrePublieSeed(13, "Acquisition de matériel médical pour les centres de santé",
+                        "Dotation des centres de santé en équipements de diagnostic.",
+                        "Santé", "Ministère de la Santé et de l'Action Sociale", new BigDecimal("72000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 50, 4,
+                        List.of(new LigneSeed("Échographe portable", 4,
+                                        "Sonde multifréquence, écran couleur", new BigDecimal("9000000")),
+                                new LigneSeed("Table d'examen", 10,
+                                        "Réglable, revêtement médical", new BigDecimal("1200000")),
+                                new LigneSeed("Stérilisateur", 6,
+                                        "Autoclave 24 litres", new BigDecimal("2000000")))),
+                new AppelOffrePublieSeed(14, "Entretien et maintenance des véhicules de service",
+                        "Contrat annuel d'entretien préventif et curatif de la flotte administrative.",
+                        "Services", "Ministère des Infrastructures et des Transports", new BigDecimal("15000000"),
+                        ModePassation.DEMANDE_RENSEIGNEMENTS_PRIX, 25, 9,
+                        List.of(new LigneSeed("Entretien préventif", 12,
+                                        "Vidanges et contrôles mensuels", new BigDecimal("500000")),
+                                new LigneSeed("Réparations mécaniques", 1,
+                                        "Forfait annuel pièces et main d'œuvre", new BigDecimal("9000000")))),
+                new AppelOffrePublieSeed(15, "Fourniture de carburant et lubrifiants",
+                        "Approvisionnement en carburant et lubrifiants pour la flotte administrative.",
+                        "Fournitures", "Ville de Dakar", new BigDecimal("38000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 20, 3,
+                        List.of(new LigneSeed("Gazole", 40000,
+                                        "Litres, livraison sur site", new BigDecimal("800")),
+                                new LigneSeed("Essence", 6000,
+                                        "Litres", new BigDecimal("850")),
+                                new LigneSeed("Huile moteur", 400,
+                                        "Bidons de 5 litres", new BigDecimal("25000")))),
+                new AppelOffrePublieSeed(16, "Installation de panneaux solaires photovoltaïques",
+                        "Fourniture, installation et mise en service de centrales solaires.",
+                        "Énergie", "Société Nationale d'Électricité", new BigDecimal("88000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 55, 7,
+                        List.of(new LigneSeed("Panneaux solaires 550 Wc", 200,
+                                        "Modules monocristallins", new BigDecimal("120000")),
+                                new LigneSeed("Onduleurs hybrides", 8,
+                                        "10 kW, MPPT", new BigDecimal("1800000")),
+                                new LigneSeed("Batteries de stockage", 16,
+                                        "Lithium 48 V, 200 Ah", new BigDecimal("2500000")))),
+                new AppelOffrePublieSeed(17, "Fourniture de mobilier scolaire",
+                        "Équipement des salles de classe en mobilier neuf.",
+                        "Mobilier", "Ministère de l'Éducation Nationale", new BigDecimal("42000000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 30, 11,
+                        List.of(new LigneSeed("Tables-bancs", 1500,
+                                        "Bois massif, deux places", new BigDecimal("22000")),
+                                new LigneSeed("Chaises de bureau", 120,
+                                        "Métal et tissu", new BigDecimal("35000")),
+                                new LigneSeed("Tableaux muraux", 80,
+                                        "120 x 90 cm", new BigDecimal("45000")))),
+                new AppelOffrePublieSeed(18, "Acquisition de matériel pédagogique et didactique",
+                        "Dotation des établissements en matériel pédagogique.",
+                        "Éducation", "Ministère de l'Éducation Nationale", new BigDecimal("13500000"),
+                        ModePassation.DEMANDE_RENSEIGNEMENTS_PRIX, 28, 5,
+                        List.of(new LigneSeed("Kits de sciences", 100,
+                                        "Physique, chimie, biologie", new BigDecimal("75000")),
+                                new LigneSeed("Cartes murales", 200,
+                                        "Géographie et histoire", new BigDecimal("15000")),
+                                new LigneSeed("Matériel de géométrie", 150,
+                                        "Équerres, compas, rapporteurs", new BigDecimal("20000")))),
+                new AppelOffrePublieSeed(19, "Nettoyage des locaux administratifs",
+                        "Prestation de nettoyage quotidien des locaux administratifs.",
+                        "Services", "Ville de Dakar", new BigDecimal("9600000"),
+                        ModePassation.DEMANDE_RENSEIGNEMENTS_PRIX, 18, 2,
+                        List.of(new LigneSeed("Nettoyage quotidien", 12,
+                                        "Prestation mensuelle", new BigDecimal("650000")),
+                                new LigneSeed("Grand nettoyage trimestriel", 4,
+                                        "Vitrerie et désinfection", new BigDecimal("450000")))),
+                new AppelOffrePublieSeed(20, "Sécurité et gardiennage des sites administratifs",
+                        "Prestation de gardiennage et de surveillance des sites administratifs.",
+                        "Services", "Ministère de l'Intérieur", new BigDecimal("24000000"),
+                        ModePassation.APPEL_OFFRES_RESTREINT, 32, 13,
+                        List.of(new LigneSeed("Gardiennage permanent", 12,
+                                        "Agents 24h/24 et 7j/7", new BigDecimal("1800000")),
+                                new LigneSeed("Ronde de surveillance", 12,
+                                        "Patrouilles nocturnes", new BigDecimal("200000")))),
+                new AppelOffrePublieSeed(21, "Fourniture de denrées alimentaires pour les cantines",
+                        "Approvisionnement des cantines administratives et sociales.",
+                        "Fournitures", "Ministère de la Santé et de l'Action Sociale", new BigDecimal("18500000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 22, 6,
+                        List.of(new LigneSeed("Riz parfumé", 2000,
+                                        "Sacs de 50 kg", new BigDecimal("18000")),
+                                new LigneSeed("Huile végétale", 500,
+                                        "Bidons de 20 litres", new BigDecimal("22000")),
+                                new LigneSeed("Légumes secs", 800,
+                                        "Sacs de 25 kg", new BigDecimal("14000")))),
+                new AppelOffrePublieSeed(22, "Acquisition de logiciels de gestion administrative",
+                        "Acquisition et déploiement de solutions logicielles métier.",
+                        "Informatique", "Agence De l'Informatique de l'État", new BigDecimal("31000000"),
+                        ModePassation.APPEL_OFFRES_RESTREINT, 38, 9,
+                        List.of(new LigneSeed("Licences de gestion documentaire", 50,
+                                        "Utilisateurs, 12 mois", new BigDecimal("150000")),
+                                new LigneSeed("Module de gestion budgétaire", 1,
+                                        "Déploiement et paramétrage", new BigDecimal("18000000")),
+                                new LigneSeed("Formation des utilisateurs", 1,
+                                        "Sessions sur site", new BigDecimal("4000000")))),
+                new AppelOffrePublieSeed(23, "Maintenance préventive des climatiseurs",
+                        "Contrat annuel d'entretien des installations de climatisation.",
+                        "Maintenance", "Ministère de l'Énergie et du Pétrole", new BigDecimal("6800000"),
+                        ModePassation.DEMANDE_RENSEIGNEMENTS_PRIX, 16, 4,
+                        List.of(new LigneSeed("Entretien semestriel", 120,
+                                        "Nettoyage et recharge de gaz", new BigDecimal("35000")),
+                                new LigneSeed("Réparation des unités", 1,
+                                        "Forfait annuel", new BigDecimal("2600000")))),
+                new AppelOffrePublieSeed(24, "Aménagement des espaces verts du siège",
+                        "Travaux d'aménagement paysager et d'irrigation.",
+                        "Travaux", "Ville de Dakar", new BigDecimal("14500000"),
+                        ModePassation.APPEL_OFFRES_OUVERT, 42, 14,
+                        List.of(new LigneSeed("Plantation d'arbres", 200,
+                                        "Essences locales", new BigDecimal("25000")),
+                                new LigneSeed("Gazon et massifs", 1,
+                                        "Fourniture et pose", new BigDecimal("6000000")),
+                                new LigneSeed("Système d'irrigation", 1,
+                                        "Goutte-à-goutte automatisé", new BigDecimal("3500000")))),
+                new AppelOffrePublieSeed(25, "Fourniture de produits d'entretien et d'hygiène",
+                        "Achat de produits d'entretien pour l'ensemble des services.",
+                        "Fournitures", "Ministère de l'Éducation Nationale", new BigDecimal("5200000"),
+                        ModePassation.DEMANDE_RENSEIGNEMENTS_PRIX, 15, 3,
+                        List.of(new LigneSeed("Détergents", 600,
+                                        "Bidons de 5 litres", new BigDecimal("4500")),
+                                new LigneSeed("Papier hygiénique", 1200,
+                                        "Rouleaux professionnels", new BigDecimal("1200")),
+                                new LigneSeed("Sacs poubelle", 3000,
+                                        "Grand format", new BigDecimal("350")))),
+                new AppelOffrePublieSeed(26, "Acquisition de matériel d'impression et de reprographie",
+                        "Renouvellement du parc d'impression des services centraux.",
+                        "Informatique", "Ministère de l'Économie, du Plan et de la Coopération",
+                        new BigDecimal("16800000"), ModePassation.APPEL_OFFRES_OUVERT, 26, 8,
+                        List.of(new LigneSeed("Photocopieur multifonction", 6,
+                                        "A3, 45 ppm, réseau", new BigDecimal("2200000")),
+                                new LigneSeed("Imprimante laser couleur", 20,
+                                        "A4, recto-verso", new BigDecimal("350000")),
+                                new LigneSeed("Consommables d'impression", 1,
+                                        "Lot initial", new BigDecimal("800000")))),
+                new AppelOffrePublieSeed(27, "Prestation de services de formation professionnelle",
+                        "Formation des agents en management et en outils numériques.",
+                        "Services", "Ministère de la Fonction Publique", new BigDecimal("12500000"),
+                        ModePassation.APPEL_OFFRES_RESTREINT, 24, 5,
+                        List.of(new LigneSeed("Formation en management", 1,
+                                        "5 sessions de 3 jours", new BigDecimal("5000000")),
+                                new LigneSeed("Formation aux outils numériques", 1,
+                                        "8 sessions de 2 jours", new BigDecimal("4500000")),
+                                new LigneSeed("Accompagnement et évaluation", 1,
+                                        "Suivi post-formation", new BigDecimal("3000000")))));
+
+        for (AppelOffrePublieSeed seed : seeds) {
+            Marche marche = marche(seed.numero(), seed.objet(), seed.description(), seed.budget(), seed.mode(),
+                    StatutMarche.PUBLIE, null, admin, jours(maintenant, seed.datePublicationJours() + 5));
+            marche.setDateValidation(jours(maintenant, seed.datePublicationJours() + 2));
+            marche.setDatePublication(jours(maintenant, seed.datePublicationJours()));
+            for (LigneSeed ligne : seed.lignes()) {
+                marche.ajouterLigne(ligneMarche(ligne.designation(), ligne.quantite(),
+                        ligne.caracteristiques(), ligne.prixUnitaire()));
+            }
+            criteres(marche);
+            marcheRepository.save(marche);
+
+            AppelOffre appelOffre = appelOffre(seed.numero(), marche, seed.objet(), seed.description(),
+                    seed.categorie(), seed.organisme(), StatutAppelOffre.PUBLIE,
+                    base.plusDays(seed.dateLimiteJours()), admin,
+                    jours(maintenant, seed.datePublicationJours()));
+            cahierDesCharges(appelOffre);
+            documentsObligatoires(appelOffre);
+            appelsOffres.put(seed.numero(), appelOffre);
+        }
+        return appelsOffres;
+    }
+
+    private void offresAEvaluer(Map<Integer, AppelOffre> appelsOffres, Fournisseur tech, Fournisseur batimat,
+                                Fournisseur digital, Fournisseur globalOffice, Instant maintenant) {
+        offre(appelsOffres.get(8), tech, new BigDecimal("20500000"), 30, StatutOffre.SOUMISE,
+                jours(maintenant, 2), "Offre technique et financière conforme au cahier des charges.");
+        offre(appelsOffres.get(8), digital, new BigDecimal("21300000"), 35, StatutOffre.SOUMISE,
+                jours(maintenant, 1), "Offre technique et financière en attente d'évaluation.");
+
+        offre(appelsOffres.get(9), batimat, new BigDecimal("45800000"), 60, StatutOffre.SOUMISE,
+                jours(maintenant, 2), "Proposition conforme aux spécifications des groupes électrogènes.");
+        offre(appelsOffres.get(9), tech, new BigDecimal("46500000"), 55, StatutOffre.SOUMISE,
+                jours(maintenant, 1), "Offre technique et financière en attente d'évaluation.");
+
+        offre(appelsOffres.get(10), tech, new BigDecimal("172000000"), 180, StatutOffre.SOUMISE,
+                jours(maintenant, 3), "Offre de construction détaillée avec planning d'exécution.");
+        offre(appelsOffres.get(10), digital, new BigDecimal("179500000"), 200, StatutOffre.SOUMISE,
+                jours(maintenant, 2), "Offre technique et financière en attente d'évaluation.");
+
+        offre(appelsOffres.get(11), batimat, new BigDecimal("25400000"), 45, StatutOffre.SOUMISE,
+                jours(maintenant, 2), "Offre de réhabilitation conforme aux normes en vigueur.");
+        offre(appelsOffres.get(11), globalOffice, new BigDecimal("26200000"), 50, StatutOffre.SOUMISE,
+                jours(maintenant, 1), "Offre technique et financière en attente d'évaluation.");
+
+        offre(appelsOffres.get(12), digital, new BigDecimal("89500000"), 30, StatutOffre.SOUMISE,
+                jours(maintenant, 2), "Offre d'approvisionnement en médicaments et consommables.");
+        offre(appelsOffres.get(12), tech, new BigDecimal("92000000"), 25, StatutOffre.SOUMISE,
+                jours(maintenant, 1), "Offre technique et financière en attente d'évaluation.");
     }
 
     private Utilisateur utilisateur(String nom, String prenom, String email, String motDePasse,
@@ -837,6 +1108,28 @@ public class DataSeeder implements CommandLineRunner {
         notification.setLien(lien);
         notification.setLue(false);
         notificationRepository.save(notification);
+    }
+
+
+    private void documentsObligatoires(AppelOffre appelOffre) {
+        documentObligatoire(appelOffre, "Offre technique", DocumentType.OFFRE_TECHNIQUE,
+                "Mémoire technique, descriptifs et fiches produits.", 1);
+        documentObligatoire(appelOffre, "Offre financière", DocumentType.OFFRE_FINANCIERE,
+                "Bordereau des prix et devis détaillé.", 2);
+        documentObligatoire(appelOffre, "Documents administratifs", DocumentType.DOCUMENT_ADMINISTRATIF,
+                "NINEA, RCCM, attestations fiscales et sociales.", 3);
+    }
+
+    private void documentObligatoire(AppelOffre appelOffre, String libelle, DocumentType type,
+                                     String description, int ordre) {
+        DocumentObligatoire document = new DocumentObligatoire();
+        document.setAppelOffre(appelOffre);
+        document.setLibelle(libelle);
+        document.setDescription(description);
+        document.setType(type);
+        document.setObligatoire(true);
+        document.setOrdre(ordre);
+        documentObligatoireRepository.save(document);
     }
 
     private void cahierDesCharges(AppelOffre appelOffre) {

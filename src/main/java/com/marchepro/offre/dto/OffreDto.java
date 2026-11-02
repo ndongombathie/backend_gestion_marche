@@ -1,5 +1,6 @@
 package com.marchepro.offre.dto;
 
+import com.marchepro.appeloffre.dto.DocumentObligatoireSuiviDto;
 import com.marchepro.common.document.DocumentDto;
 import com.marchepro.offre.entity.Offre;
 import com.marchepro.offre.entity.StatutOffre;
@@ -30,9 +31,11 @@ public record OffreDto(
         String ninea,
         long nombreEvaluations,
         List<DocumentDto> documents,
+        List<DocumentObligatoireSuiviDto> documentsObligatoires,
         List<LigneOffreDto> lignes
 ) {
-    public static OffreDto from(Offre o, long nombreEvaluations, List<DocumentDto> documents) {
+    public static OffreDto from(Offre o, long nombreEvaluations, List<DocumentDto> documents,
+                                List<DocumentObligatoireSuiviDto> documentsObligatoires) {
         return new OffreDto(
                 o.getId(), o.getReference(), o.getReferenceAccuse(), o.getMontant(),
                 o.getDelaiLivraisonJours(), o.getInformationsTechniques(), o.getObservationsFournisseur(),
@@ -46,6 +49,7 @@ public record OffreDto(
                 o.getFournisseur() != null ? o.getFournisseur().getNinea() : null,
                 nombreEvaluations,
                 documents,
+                documentsObligatoires,
                 o.getLignes().stream().map(LigneOffreDto::from).toList()
         );
     }

@@ -34,9 +34,11 @@ public record AppelOffreDto(
         long nombreOffres,
         boolean ouvert,
         List<DocumentDto> documents,
+        List<DocumentObligatoireDto> documentsObligatoiresDetails,
         List<LigneMarcheDto> materiels
 ) {
-    public static AppelOffreDto from(AppelOffre a, long nombreOffres, List<DocumentDto> documents) {
+    public static AppelOffreDto from(AppelOffre a, long nombreOffres, List<DocumentDto> documents,
+                                     List<DocumentObligatoireDto> documentsObligatoiresDetails) {
         BigDecimal budget = a.isBudgetPublic() && a.getMarche() != null
                 ? a.getMarche().getBudgetPrevisionnel() : null;
         return new AppelOffreDto(
@@ -51,6 +53,7 @@ public record AppelOffreDto(
                 nombreOffres,
                 a.estOuvert(),
                 documents,
+                documentsObligatoiresDetails,
                 a.getMarche() != null
                         ? a.getMarche().getLignes().stream().map(LigneMarcheDto::from).toList()
                         : List.of()

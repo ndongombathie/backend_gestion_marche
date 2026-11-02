@@ -1,12 +1,13 @@
 package com.marchepro.offre.service;
 
+import com.marchepro.appeloffre.dto.DocumentObligatoireSuiviDto;
 import com.marchepro.appeloffre.entity.AppelOffre;
 import com.marchepro.appeloffre.entity.StatutAppelOffre;
 import com.marchepro.appeloffre.repository.AppelOffreRepository;
+import com.marchepro.appeloffre.service.DocumentObligatoireService;
 import com.marchepro.common.audit.AuditService;
 import com.marchepro.common.document.DocumentDto;
 import com.marchepro.common.document.DocumentService;
-import com.marchepro.common.document.DocumentType;
 import com.marchepro.common.dto.DecisionRequest;
 import com.marchepro.common.exception.BusinessException;
 import com.marchepro.common.exception.ConflictException;
@@ -43,6 +44,7 @@ public class OffreService {
     private final FournisseurService fournisseurService;
     private final EvaluationRepository evaluationRepository;
     private final DocumentService documentService;
+    private final DocumentObligatoireService documentObligatoireService;
     private final NotificationService notificationService;
     private final UtilisateurRepository utilisateurRepository;
     private final AuditService auditService;
@@ -52,6 +54,7 @@ public class OffreService {
                         FournisseurService fournisseurService,
                         EvaluationRepository evaluationRepository,
                         DocumentService documentService,
+                        DocumentObligatoireService documentObligatoireService,
                         NotificationService notificationService,
                         UtilisateurRepository utilisateurRepository,
                         AuditService auditService) {
@@ -60,6 +63,7 @@ public class OffreService {
         this.fournisseurService = fournisseurService;
         this.evaluationRepository = evaluationRepository;
         this.documentService = documentService;
+        this.documentObligatoireService = documentObligatoireService;
         this.notificationService = notificationService;
         this.utilisateurRepository = utilisateurRepository;
         this.auditService = auditService;
@@ -124,9 +128,7 @@ public class OffreService {
             throw new BusinessException("Le montant de l'offre doit être renseigné");
         }
         List<DocumentDto> documents = documentService.lister("OFFRE", offre.getId());
-        verifierDocument(documents, DocumentType.OFFRE_TECHNIQUE, "l'offre technique");
-        verifierDocument(documents, DocumentType.OFFRE_FINANCIERE, "l'offre financière");
-        verifierDocument(documents, DocumentType.DOCUMENT_ADMINISTRATIF, "les documents administratifs");
+        documentObligatoireService.verifierCompletion(appelOffre.getId(), documents);
 
         offre.setReference(genererReference());
         offre.setReferenceAccuse("ACC-" + Year.now().getValue() + "-"
@@ -205,7 +207,9 @@ public class OffreService {
     public OffreDto mapper(Offre offre) {
         long evaluations = evaluationRepository.findByOffreId(offre.getId()).size();
         List<DocumentDto> documents = documentService.lister("OFFRE", offre.getId());
-        return OffreDto.from(offre, evaluations, documents);
+        List<DocumentObligatoireSuiviDto> documentsObligatoires =
+                documentObligatoireService.suivre(offre.getAppelOffre().getId(), documents);
+        return OffreDto.from(offre, evaluations, documents, documentsObligatoires);
     }
 
     private Offre chargerAutorise(Long id) {
@@ -215,13 +219,6 @@ public class OffreService {
             throw new ForbiddenException("Cette offre ne vous appartient pas");
         }
         return offre;
-    }
-
-    private void verifierDocument(List<DocumentDto> documents, DocumentType type, String libelle) {
-        boolean present = documents.stream().anyMatch(d -> d.type() == type);
-        if (!present) {
-            throw new BusinessException("Veuillez joindre " + libelle + " avant de soumettre l'offre");
-        }
     }
 
     private void appliquer(Offre offre, OffreRequest request) {

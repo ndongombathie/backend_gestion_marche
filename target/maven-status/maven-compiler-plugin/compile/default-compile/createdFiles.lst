@@ -10,6 +10,7 @@ com/marchepro/evaluation/entity/NoteEvaluation.class
 com/marchepro/chatbot/controller/ChatbotController.class
 com/marchepro/livraison/service/LivraisonService.class
 com/marchepro/attribution/repository/AttributionRepository.class
+com/marchepro/appeloffre/dto/DocumentObligatoireSuiviDto.class
 com/marchepro/utilisateur/dto/StatutRequest.class
 com/marchepro/marche/controller/MarcheController.class
 com/marchepro/common/exception/ResourceNotFoundException.class
@@ -17,6 +18,7 @@ com/marchepro/common/exception/ForbiddenException.class
 com/marchepro/common/audit/AuditService.class
 com/marchepro/evaluation/dto/EvaluationDto.class
 com/marchepro/MarcheProApplication.class
+com/marchepro/appeloffre/dto/DocumentObligatoireRequest.class
 com/marchepro/utilisateur/service/UtilisateurService.class
 com/marchepro/offre/entity/StatutOffre.class
 com/marchepro/common/exception/GlobalExceptionHandler.class
@@ -37,6 +39,7 @@ com/marchepro/attribution/entity/Attribution.class
 com/marchepro/besoin/dto/ExpressionBesoinDto.class
 com/marchepro/security/UserPrincipal.class
 com/marchepro/livraison/entity/Reception.class
+com/marchepro/appeloffre/service/DocumentObligatoireService$1.class
 com/marchepro/offre/repository/OffreRepository.class
 com/marchepro/auth/controller/AuthController.class
 com/marchepro/materiel/dto/MaterielDto.class
@@ -49,6 +52,8 @@ com/marchepro/marche/entity/ModePassation.class
 com/marchepro/livraison/entity/StatutReception.class
 com/marchepro/marche/service/MarcheService.class
 com/marchepro/livraison/entity/Livraison.class
+com/marchepro/appeloffre/controller/DocumentObligatoireController.class
+com/marchepro/appeloffre/service/DocumentObligatoireService.class
 com/marchepro/fournisseur/dto/FournisseurDto.class
 com/marchepro/offre/entity/LigneOffre.class
 com/marchepro/besoin/dto/LigneBesoinRequest.class
@@ -64,6 +69,7 @@ com/marchepro/chatbot/dto/ChatRequest.class
 com/marchepro/appeloffre/entity/StatutAppelOffre.class
 com/marchepro/fournisseur/dto/ValidationFournisseurRequest.class
 com/marchepro/notification/service/NotificationService.class
+com/marchepro/appeloffre/dto/DocumentObligatoireDto.class
 com/marchepro/auth/service/AuthService.class
 com/marchepro/besoin/controller/BesoinController.class
 com/marchepro/common/document/DocumentDto.class
@@ -113,6 +119,7 @@ com/marchepro/materiel/service/MaterielService.class
 com/marchepro/evaluation/entity/Evaluation.class
 com/marchepro/utilisateur/entity/StatutUtilisateur.class
 com/marchepro/livraison/dto/LigneLivraisonRequest.class
+com/marchepro/appeloffre/entity/DocumentObligatoire.class
 com/marchepro/attribution/entity/StatutAttribution.class
 com/marchepro/rapport/dto/FournisseurDashboardDto.class
 com/marchepro/besoin/entity/LigneBesoin.class
@@ -123,6 +130,8 @@ com/marchepro/appeloffre/repository/AppelOffreRepository.class
 com/marchepro/besoin/entity/StatutBesoin.class
 com/marchepro/marche/entity/TypeCritere.class
 com/marchepro/appeloffre/entity/AppelOffre.class
+com/marchepro/config/DocumentObligatoireInitializer.class
+com/marchepro/appeloffre/repository/DocumentObligatoireRepository.class
 com/marchepro/fournisseur/dto/FournisseurUpdateRequest.class
 com/marchepro/chatbot/dto/ChatResponse$Resultat.class
 com/marchepro/rapport/dto/DashboardDto.class

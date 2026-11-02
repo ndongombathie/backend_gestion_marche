@@ -42,6 +42,9 @@ public class Document {
     @Column(name = "entite_id", nullable = false)
     private Long entiteId;
 
+    @Column(name = "document_obligatoire_id")
+    private Long documentObligatoireId;
+
     @Column(name = "date_upload", nullable = false, updatable = false)
     private Instant dateUpload;
 

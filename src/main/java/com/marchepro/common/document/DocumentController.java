@@ -36,11 +36,13 @@ public class DocumentController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Téléverser un document")
     public ApiResponse<DocumentDto> upload(@RequestParam("fichier") MultipartFile fichier,
-                                           @RequestParam("type") DocumentType type,
+                                           @RequestParam(value = "type", required = false) DocumentType type,
                                            @RequestParam("entiteType") String entiteType,
-                                           @RequestParam("entiteId") Long entiteId) {
+                                           @RequestParam("entiteId") Long entiteId,
+                                           @RequestParam(value = "documentObligatoireId", required = false)
+                                           Long documentObligatoireId) {
         return ApiResponse.success("Document téléversé",
-                documentService.stocker(fichier, type, entiteType, entiteId));
+                documentService.stocker(fichier, type, entiteType, entiteId, documentObligatoireId));
     }
 
     @GetMapping

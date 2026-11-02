@@ -1,8 +1,12 @@
 package com.marchepro.common.document;
 
+import com.marchepro.appeloffre.entity.DocumentObligatoire;
+import com.marchepro.appeloffre.repository.DocumentObligatoireRepository;
 import com.marchepro.common.audit.AuditService;
 import com.marchepro.common.exception.BusinessException;
 import com.marchepro.common.exception.ResourceNotFoundException;
+import com.marchepro.offre.entity.Offre;
+import com.marchepro.offre.repository.OffreRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -29,13 +33,19 @@ public class DocumentService {
     private static final long TAILLE_MAX = 10L * 1024 * 1024;
 
     private final DocumentRepository documentRepository;
+    private final DocumentObligatoireRepository documentObligatoireRepository;
+    private final OffreRepository offreRepository;
     private final AuditService auditService;
     private final Path racine;
 
     public DocumentService(DocumentRepository documentRepository,
+                           DocumentObligatoireRepository documentObligatoireRepository,
+                           OffreRepository offreRepository,
                            AuditService auditService,
                            @Value("${app.upload.dir}") String uploadDir) {
         this.documentRepository = documentRepository;
+        this.documentObligatoireRepository = documentObligatoireRepository;
+        this.offreRepository = offreRepository;
         this.auditService = auditService;
         this.racine = Paths.get(uploadDir).toAbsolutePath().normalize();
         try {
@@ -47,6 +57,20 @@ public class DocumentService {
 
     @Transactional
     public DocumentDto stocker(MultipartFile fichier, DocumentType type, String entiteType, Long entiteId) {
+        return stocker(fichier, type, entiteType, entiteId, null);
+    }
+
+    @Transactional
+    public DocumentDto stocker(MultipartFile fichier, DocumentType type, String entiteType, Long entiteId,
+                               Long documentObligatoireId) {
+        DocumentObligatoire documentObligatoire = documentObligatoireId == null
+                ? null : verifierDocumentObligatoire(documentObligatoireId, entiteType, entiteId);
+        if (type == null && documentObligatoire != null) {
+            type = documentObligatoire.getType();
+        }
+        if (type == null) {
+            type = DocumentType.AUTRE;
+        }
         if (fichier == null || fichier.isEmpty()) {
             throw new BusinessException("Le fichier est vide");
         }
@@ -81,6 +105,7 @@ public class DocumentService {
         document.setType(type);
         document.setEntiteType(entiteType.toUpperCase(Locale.ROOT));
         document.setEntiteId(entiteId);
+        document.setDocumentObligatoireId(documentObligatoireId);
         documentRepository.save(document);
 
         auditService.enregistrer("UPLOAD_DOCUMENT", entiteType.toUpperCase(Locale.ROOT), entiteId,
@@ -127,6 +152,28 @@ public class DocumentService {
             // Le fichier peut déjà être absent : on supprime quand même la métadonnée
         }
         documentRepository.delete(document);
+    }
+
+    private DocumentObligatoire verifierDocumentObligatoire(Long documentObligatoireId, String entiteType,
+                                                            Long entiteId) {
+        DocumentObligatoire documentObligatoire = documentObligatoireRepository.findById(documentObligatoireId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document obligatoire introuvable"));
+
+        Long appelOffreAttendu;
+        if ("APPEL_OFFRE".equalsIgnoreCase(entiteType)) {
+            appelOffreAttendu = entiteId;
+        } else if ("OFFRE".equalsIgnoreCase(entiteType)) {
+            Offre offre = offreRepository.findById(entiteId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Offre introuvable"));
+            appelOffreAttendu = offre.getAppelOffre().getId();
+        } else {
+            throw new BusinessException("Un document obligatoire ne peut être rattaché qu'à une offre");
+        }
+
+        if (!documentObligatoire.getAppelOffre().getId().equals(appelOffreAttendu)) {
+            throw new BusinessException("Ce document obligatoire n'appartient pas à cet appel d'offres");
+        }
+        return documentObligatoire;
     }
 
     private String extension(String nom) {

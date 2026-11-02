@@ -10,6 +10,8 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     boolean existsByEntiteTypeAndEntiteIdAndType(String entiteType, Long entiteId, DocumentType type);
 
+    boolean existsByDocumentObligatoireId(Long documentObligatoireId);
+
     long countByEntiteTypeAndEntiteIdAndType(String entiteType, Long entiteId, DocumentType type);
 
     void deleteByEntiteTypeAndEntiteId(String entiteType, Long entiteId);

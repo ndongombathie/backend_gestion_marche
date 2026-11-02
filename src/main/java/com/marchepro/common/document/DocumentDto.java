@@ -10,6 +10,7 @@ public record DocumentDto(
         DocumentType type,
         String entiteType,
         Long entiteId,
+        Long documentObligatoireId,
         Instant dateUpload
 ) {
     public static DocumentDto from(Document document) {
@@ -21,6 +22,7 @@ public record DocumentDto(
                 document.getType(),
                 document.getEntiteType(),
                 document.getEntiteId(),
+                document.getDocumentObligatoireId(),
                 document.getDateUpload()
         );
     }
