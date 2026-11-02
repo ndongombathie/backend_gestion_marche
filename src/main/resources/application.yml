@@ -1,0 +1,73 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: marchepro
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/marches}
+    username: ${DB_USERNAME:marches}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Africa/Dakar
+        format_sql: false
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:10MB}
+      max-request-size: ${MAX_REQUEST_SIZE:25MB}
+  jackson:
+    time-zone: Africa/Dakar
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    problemdetails:
+      enabled: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:MarcheProDevSecretKeyThatMustBeAtLeastThirtyTwoBytesLong2026!}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:4173,http://127.0.0.1:5173}
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+  seed:
+    enabled: ${SEED_ENABLED:true}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:5173}
+  organisation:
+    nom: ${ORG_NAME:Organisme National de Démonstration}
+    devise: FCFA
+    fuseau: Africa/Dakar
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.marchepro: INFO
+    org.springframework.security: WARN
